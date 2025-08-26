@@ -1,0 +1,15 @@
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.csproj.AssemblyReference.cache
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.GeneratedMSBuildEditorConfig.editorconfig
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.AssemblyInfoInputs.cache
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.AssemblyInfo.cs
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.csproj.CoreCompileInputs.cache
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\bin\Release\net8.0\ChatPlatform.Services.deps.json
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\bin\Release\net8.0\ChatPlatform.Services.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\bin\Release\net8.0\ChatPlatform.Services.pdb
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\bin\Release\net8.0\ChatPlatform.Core.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\bin\Release\net8.0\ChatPlatform.Core.pdb
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.csproj.CopyComplete
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\refint\ChatPlatform.Services.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ChatPlatform.Services.pdb
+D:\LapTrinhAI\demoE5\src\ChatPlatform.Services\obj\Release\net8.0\ref\ChatPlatform.Services.dll

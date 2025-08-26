@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "e6dtYatvpNYW8tDTLQaBvYYJsytpVPArEM+el+CKW8DKEDiaoAEw5mnNfZ7CoSjGg4ddcB7B/1GDEChWjov+fw==",
+  "success": true,
+  "projectFilePath": "D:\\LapTrinhAI\\demoE5\\src\\ChatPlatform.Services\\ChatPlatform.Services.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\microsoft.extensions.options\\8.0.0\\microsoft.extensions.options.8.0.0.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\microsoft.extensions.primitives\\8.0.0\\microsoft.extensions.primitives.8.0.0.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\pipelines.sockets.unofficial\\2.2.8\\pipelines.sockets.unofficial.2.2.8.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\stackexchange.redis\\2.7.17\\stackexchange.redis.2.7.17.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\system.componentmodel.annotations\\5.0.0\\system.componentmodel.annotations.5.0.0.nupkg.sha512",
+    "C:\\Users\\LAPTOP\\.nuget\\packages\\system.io.pipelines\\5.0.1\\system.io.pipelines.5.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}

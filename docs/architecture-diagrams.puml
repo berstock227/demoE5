@@ -1,0 +1,522 @@
+@startuml "High-Level Architecture"
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentStyle rectangle
+
+package "Client Layer" {
+    [Web Client] as WC
+    [Mobile Client] as MC
+    [Desktop Client] as DC
+}
+
+package "Gateway Layer" {
+    [Load Balancer] as LB
+    [API Gateway] as AG
+}
+
+package "Application Layer" {
+    [SignalR Hub] as SH
+    [Chat Router Service] as CR
+    [Connection Manager] as CM
+    [Presence Service] as PS
+    [Message Store Service] as MS
+    [Notification Service] as NS
+}
+
+package "Data Layer" {
+    [Redis Pub/Sub] as RP
+    [Redis Streams] as RS
+    [PostgreSQL] as PG
+    [Object Storage] as OS
+}
+
+package "Infrastructure" {
+    [Monitoring] as MON
+    [Logging] as LOG
+    [Tracing] as TRACE
+}
+
+WC --> LB : WebSocket
+MC --> LB : WebSocket
+DC --> LB : WebSocket
+
+LB --> AG : HTTP/2
+AG --> SH : gRPC
+AG --> CR : gRPC
+
+SH --> CM : In-Memory
+SH --> RP : Publish
+CR --> RP : Subscribe
+CR --> CM : gRPC
+CM --> RP : Publish
+
+PS --> RP : Heartbeat
+MS --> PG : Persist
+MS --> RS : Stream
+NS --> OS : File URLs
+
+RP --> SH : Fan-out
+RS --> MS : Replay
+
+MON --> SH : Metrics
+LOG --> SH : Structured Logs
+TRACE --> SH : Spans
+@enduml
+
+@startuml "Sequence Diagram - Send Message"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+actor User
+participant "SignalR Hub" as SH
+participant "Chat Router" as CR
+participant "Redis Pub/Sub" as RP
+participant "Connection Manager" as CM
+participant "Message Store" as MS
+participant "PostgreSQL" as PG
+
+User -> SH: SendMessage(text, roomId)
+activate SH
+
+SH -> SH: Validate JWT
+SH -> SH: Rate Limit Check
+SH -> CR: RouteMessage(gRPC)
+activate CR
+
+CR -> CR: Apply ACL
+CR -> CR: Generate ULID
+CR -> MS: StoreMessage()
+activate MS
+MS -> PG: INSERT INTO messages
+MS -> MS: Outbox Pattern
+deactivate MS
+
+CR -> RP: Publish to chat:{tenant}:{room}
+activate RP
+
+loop For each connection in room
+    RP -> CM: Fan-out message
+    activate CM
+    CM -> SH: Push to WebSocket
+    SH -> User: Message delivered
+    deactivate CM
+end
+
+deactivate RP
+
+SH -> User: AckMessage(ulid, status)
+deactivate CR
+deactivate SH
+@enduml
+
+@startuml "Sequence Diagram - Join Room"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+actor User
+participant "SignalR Hub" as SH
+participant "Chat Router" as CR
+participant "Redis Pub/Sub" as RP
+participant "Connection Manager" as CM
+participant "Presence Service" as PS
+participant "Message Store" as MS
+
+User -> SH: JoinRoom(roomId)
+activate SH
+
+SH -> SH: Validate JWT
+SH -> SH: Check room access
+SH -> CR: JoinRoom(gRPC)
+activate CR
+
+CR -> CR: Validate membership
+CR -> PS: UpdatePresence(userId, roomId, online)
+activate PS
+PS -> PS: Redis SET + TTL
+deactivate PS
+
+CR -> RP: Publish presence:{tenant}
+activate RP
+RP -> SH: Notify room members
+deactivate RP
+
+SH -> SH: Add to SignalR group
+SH -> MS: GetRecentMessages(roomId, limit)
+activate MS
+MS -> MS: Query with pagination
+deactivate MS
+
+SH -> User: RoomJoined + recent messages
+SH -> User: PresenceUpdate(online users)
+deactivate CR
+deactivate SH
+@enduml
+
+@startuml "Connection Management & Sharding"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+package "Load Balancer" {
+    [Nginx/Envoy] as LB
+}
+
+package "SignalR Instances" {
+    [Instance 1] as I1
+    [Instance 2] as I2
+    [Instance 3] as I3
+}
+
+package "Connection Manager" {
+    [Shard 1] as S1
+    [Shard 2] as S2
+    [Shard 3] as S3
+}
+
+package "Redis Backplane" {
+    [Redis Cluster] as RC
+}
+
+LB -> I1 : Sticky Session\nroomHash(userId) % 3 = 0
+LB -> I2 : Sticky Session\nroomHash(userId) % 3 = 1
+LB -> I3 : Sticky Session\nroomHash(userId) % 3 = 2
+
+I1 -> S1 : Connection mapping
+I2 -> S2 : Connection mapping
+I3 -> S3 : Connection mapping
+
+S1 -> RC : Publish updates
+S2 -> RC : Publish updates
+S3 -> RC : Publish updates
+
+RC -> I1 : Fan-out to all instances
+RC -> I2 : Fan-out to all instances
+RC -> I3 : Fan-out to all instances
+@enduml
+
+@startuml "Redis Data Structure"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+package "Redis Keys & Data Types" {
+    
+    package "Pub/Sub Channels" {
+        [chat:{tenant}:{room}] as CHAT
+        [presence:{tenant}] as PRESENCE
+        [typing:{tenant}:{room}] as TYPING
+    }
+    
+    package "Streams" {
+        [chatlog:{tenant}] as STREAM
+        note right : MAXLEN ~ 10M\nRetention: 7 days
+    }
+    
+    package "Sets" {
+        [online:{tenant}:{room}] as ONLINE
+        note right : TTL: 15s\nMembers: userIds
+    }
+    
+    package "Sorted Sets" {
+        [typing:{tenant}:{room}] as TYPING_SET
+        note right : Score: timestamp\nTTL: 5s
+    }
+    
+    package "Hash Maps" {
+        [user:{userId}] as USER
+        note right : Fields: tenant, roles, lastSeen
+    }
+    
+    package "String Keys" {
+        [jwt:deny:{jti}] as JWT_DENY
+        note right : TTL: 30 days\nValue: revoked timestamp
+    }
+}
+
+CHAT --> STREAM : Message persistence
+PRESENCE --> ONLINE : Update online status
+TYPING --> TYPING_SET : Track typing state
+USER --> PRESENCE : User metadata
+JWT_DENY --> USER : Authentication
+@enduml
+
+@startuml "Database Schema"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+entity "tenants" {
+    * id : UUID
+    --
+    * name : VARCHAR(100)
+    * domain : VARCHAR(255)
+    * status : ENUM
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+    --
+    INDEX idx_domain (domain)
+    INDEX idx_status (status)
+}
+
+entity "users" {
+    * id : UUID
+    --
+    * tenant_id : UUID
+    * email : VARCHAR(255)
+    * username : VARCHAR(100)
+    * status : ENUM
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+    --
+    INDEX idx_tenant_email (tenant_id, email)
+    INDEX idx_tenant_username (tenant_id, username)
+}
+
+entity "rooms" {
+    * id : VARCHAR(100)
+    --
+    * tenant_id : UUID
+    * name : VARCHAR(255)
+    * type : ENUM
+    * created_by : UUID
+    * created_at : TIMESTAMP
+    * updated_at : TIMESTAMP
+    --
+    INDEX idx_tenant_type (tenant_id, type)
+    INDEX idx_created_by (created_by)
+}
+
+entity "memberships" {
+    * id : UUID
+    --
+    * tenant_id : UUID
+    * room_id : VARCHAR(100)
+    * user_id : UUID
+    * role : ENUM
+    * joined_at : TIMESTAMP
+    --
+    INDEX idx_tenant_room (tenant_id, room_id)
+    INDEX idx_user_rooms (user_id)
+    UNIQUE idx_unique_membership (tenant_id, room_id, user_id)
+}
+
+entity "messages" {
+    * id : VARCHAR(26)
+    --
+    * tenant_id : UUID
+    * room_id : VARCHAR(100)
+    * sender_id : UUID
+    * message_type : ENUM
+    * content : TEXT
+    * metadata : JSONB
+    * created_at : BIGINT
+    * updated_at : TIMESTAMP
+    --
+    INDEX idx_tenant_room_time (tenant_id, room_id, created_at DESC)
+    INDEX idx_sender_time (sender_id, created_at DESC)
+    INDEX idx_metadata (metadata) USING GIN
+}
+
+entity "receipts" {
+    * id : UUID
+    --
+    * tenant_id : UUID
+    * room_id : VARCHAR(100)
+    * user_id : UUID
+    * message_id : VARCHAR(26)
+    * receipt_type : ENUM
+    * created_at : TIMESTAMP
+    --
+    INDEX idx_tenant_room_user (tenant_id, room_id, user_id)
+    INDEX idx_message_receipts (message_id)
+}
+
+entity "outbox" {
+    * id : UUID
+    --
+    * tenant_id : UUID
+    * topic : VARCHAR(100)
+    * payload : JSONB
+    * status : ENUM
+    * retry_count : INTEGER
+    * created_at : TIMESTAMP
+    * dispatched_at : TIMESTAMP
+    --
+    INDEX idx_tenant_topic_status (tenant_id, topic, status)
+    INDEX idx_created_at (created_at)
+}
+
+tenants ||--o{ users : has
+tenants ||--o{ rooms : contains
+users ||--o{ memberships : belongs_to
+rooms ||--o{ memberships : has
+users ||--o{ messages : sends
+rooms ||--o{ messages : contains
+messages ||--o{ receipts : generates
+tenants ||--o{ outbox : publishes
+@enduml
+
+@startuml "Rate Limiting & Backpressure"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+package "Rate Limiting Layers" {
+    
+    package "Per-Connection" {
+        [Token Bucket] as TB_CONN
+        note right : 20 msg/s\nBurst: 40
+    }
+    
+    package "Per-User" {
+        [Token Bucket] as TB_USER
+        note right : 100 msg/s\nBurst: 500
+    }
+    
+    package "Per-Tenant" {
+        [Token Bucket] as TB_TENANT
+        note right : 200 msg/s\nBurst: 1000
+    }
+}
+
+package "Queue Management" {
+    [Connection Queue] as CQ
+    [User Queue] as UQ
+    [Tenant Queue] as TQ
+    
+    note right of CQ : Max: 1k pending\nDrop policy: LIFO
+    note right of UQ : Max: 5k pending\nDrop policy: FIFO
+    note right of TQ : Max: 50k pending\nDrop policy: Priority
+}
+
+package "Backpressure Handling" {
+    [Slow Consumer Detector] as SCD
+    [Connection Closer] as CC
+    [Circuit Breaker] as CB
+}
+
+TB_CONN --> CQ : Check tokens
+TB_USER --> UQ : Check tokens
+TB_TENANT --> TQ : Check tokens
+
+CQ --> SCD : Monitor queue depth
+UQ --> SCD : Monitor queue depth
+TQ --> SCD : Monitor queue depth
+
+SCD --> CC : Close slow connections
+SCD --> CB : Open circuit if needed
+
+CC --> CC : Send close frame 1008\n(Connection timeout)
+CB --> CB : Reject new requests\nuntil recovery
+@enduml
+
+@startuml "Security & Authentication Flow"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+actor User
+participant "Client SDK" as SDK
+participant "Load Balancer" as LB
+participant "SignalR Hub" as SH
+participant "JWT Validator" as JWT
+participant "Redis" as REDIS
+
+User -> SDK : Login(credentials)
+activate SDK
+
+SDK -> SDK : Store JWT token
+SDK -> LB : WebSocket upgrade\nSec-WebSocket-Protocol: bearer
+activate LB
+
+LB -> SH : Forward upgrade request
+activate SH
+
+SH -> JWT : Validate JWT token
+activate JWT
+
+JWT -> JWT : Verify signature
+JWT -> JWT : Check expiration
+JWT -> JWT : Validate claims
+JWT -> REDIS : Check revocation list
+activate REDIS
+
+alt Token revoked
+    REDIS -> JWT : Found in deny list
+    JWT -> SH : Validation failed
+    SH -> SDK : Connection rejected
+    deactivate SH
+    deactivate LB
+    deactivate SDK
+else Token valid
+    REDIS -> JWT : Not in deny list
+    JWT -> SH : Validation successful
+    JWT -> SH : User context
+    
+    SH -> SH : Extract tenant, roles
+    SH -> SH : Create connection context
+    SH -> SDK : Connection accepted
+    
+    loop Every 15 seconds
+        SDK -> SH : Presence heartbeat
+        SH -> REDIS : Update online status
+    end
+    
+    deactivate JWT
+    deactivate REDIS
+end
+
+deactivate SH
+deactivate LB
+deactivate SDK
+@enduml
+
+@startuml "Observability & Monitoring"
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+package "Application Metrics" {
+    [SignalR Hub] as SH
+    [Chat Router] as CR
+    [Connection Manager] as CM
+}
+
+package "Infrastructure Metrics" {
+    [System] as SYS
+    [Redis] as REDIS
+    [PostgreSQL] as PG
+}
+
+package "Business Metrics" {
+    [Active Users] as AU
+    [Message Volume] as MV
+    [Delivery Success] as DS
+}
+
+package "Monitoring Stack" {
+    [Prometheus] as PROM
+    [Grafana] as GRAF
+    [Jaeger] as JAEGER
+    [ELK Stack] as ELK
+}
+
+SH --> PROM : ws_active_conns\nmsg_ingress_rate\nack_latency_ms
+CR --> PROM : fanout_latency_ms\nrate_limit_hits\nacl_violations
+CM --> PROM : connection_errors\nslow_consumer_kills
+
+SYS --> PROM : cpu_usage\nmemory_usage\nfile_descriptors
+REDIS --> PROM : ops_per_sec\nmemory_usage\nconnection_count
+PG --> PROM : active_connections\nquery_latency\ntransaction_rate
+
+AU --> PROM : concurrent_users\nusers_per_tenant
+MV --> PROM : messages_per_hour\nmessages_per_room
+DS --> PROM : delivery_success_rate\nack_timeout_rate
+
+PROM --> GRAF : Time series data
+GRAF --> GRAF : Dashboards & Alerts
+
+SH --> JAEGER : Distributed traces
+CR --> JAEGER : Distributed traces
+CM --> JAEGER : Distributed traces
+
+SH --> ELK : Structured logs
+CR --> ELK : Structured logs
+CM --> ELK : Structured logs
+
+GRAF --> GRAF : Alert Rules:\n- p95 ack_latency > 150ms\n- Redis lag > 5s\n- Error rate > 1%
+@enduml

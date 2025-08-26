@@ -1,0 +1,377 @@
+syntax = "proto3";
+
+package chat.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "Chat.V1";
+option go_package = "github.com/chatplatform/protos/chat/v1";
+
+// ChatService provides gRPC endpoints for chat operations
+service ChatService {
+  // SendMessage sends a message to a specific room
+  rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+  
+  // CreateRoom creates a new chat room
+  rpc CreateRoom(CreateRoomRequest) returns (CreateRoomResponse);
+  
+  // JoinRoom allows a user to join a chat room
+  rpc JoinRoom(JoinRoomRequest) returns (JoinRoomResponse);
+  
+  // LeaveRoom allows a user to leave a chat room
+  rpc LeaveRoom(LeaveRoomRequest) returns (LeaveRoomResponse);
+  
+  // GetRoomMessages retrieves messages from a room with pagination
+  rpc GetRoomMessages(GetRoomMessagesRequest) returns (GetRoomMessagesResponse);
+  
+  // Acknowledge message receipt
+  rpc AcknowledgeMessage(AcknowledgeMessageRequest) returns (AcknowledgeMessageResponse);
+  
+  // Update typing indicator
+  rpc UpdateTyping(TypingRequest) returns (TypingResponse);
+  
+  // Update presence status
+  rpc UpdatePresence(PresenceRequest) returns (PresenceResponse);
+  
+  // Get room members
+  rpc GetRoomMembers(GetRoomMembersRequest) returns (GetRoomMembersResponse);
+  
+  // Stream room updates (real-time)
+  rpc StreamRoomUpdates(StreamRoomUpdatesRequest) returns (stream RoomUpdate);
+  
+  // Health check endpoint
+  rpc HealthCheck(google.protobuf.Empty) returns (HealthCheckResponse);
+}
+
+// Message types for WebSocket frames
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_TEXT = 1;
+  MESSAGE_TYPE_IMAGE = 2;
+  MESSAGE_TYPE_FILE = 3;
+  MESSAGE_TYPE_SYSTEM = 4;
+  MESSAGE_TYPE_THREAD_REPLY = 5;
+}
+
+// Room types
+enum RoomType {
+  ROOM_TYPE_UNSPECIFIED = 0;
+  ROOM_TYPE_DIRECT = 1;
+  ROOM_TYPE_GROUP = 2;
+  ROOM_TYPE_CHANNEL = 3;
+}
+
+// User roles in rooms
+enum UserRole {
+  USER_ROLE_UNSPECIFIED = 0;
+  USER_ROLE_MEMBER = 1;
+  USER_ROLE_MODERATOR = 2;
+  USER_ROLE_ADMIN = 3;
+  USER_ROLE_OWNER = 4;
+}
+
+// Receipt types
+enum ReceiptType {
+  RECEIPT_TYPE_UNSPECIFIED = 0;
+  RECEIPT_TYPE_DELIVERED = 1;
+  RECEIPT_TYPE_READ = 2;
+  RECEIPT_TYPE_TYPING = 3;
+}
+
+// SendMessageRequest for sending a message
+message SendMessageRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  string sender_id = 3;
+  MessageType message_type = 4;
+  string content = 5;
+  map<string, string> metadata = 6;
+  string thread_id = 7; // Optional: for thread replies
+  repeated Attachment attachments = 8;
+}
+
+// SendMessageResponse after message is sent
+message SendMessageResponse {
+  string message_id = 1; // ULID format
+  string tenant_id = 2;
+  string room_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  MessageStatus status = 5;
+  string error_message = 6;
+}
+
+// CreateRoomRequest for creating a new room
+message CreateRoomRequest {
+  string tenant_id = 1;
+  string name = 2;
+  RoomType room_type = 3;
+  string created_by = 4;
+  repeated string member_ids = 5;
+  map<string, string> metadata = 6;
+  bool is_private = 7;
+}
+
+// CreateRoomResponse after room creation
+message CreateRoomResponse {
+  string room_id = 1;
+  string tenant_id = 2;
+  string name = 3;
+  RoomType room_type = 4;
+  google.protobuf.Timestamp created_at = 5;
+  repeated RoomMember members = 6;
+  MessageStatus status = 5;
+  string error_message = 6;
+}
+
+// JoinRoomRequest for joining a room
+message JoinRoomRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  string user_id = 3;
+  UserRole role = 4;
+}
+
+// JoinRoomResponse after joining room
+message JoinRoomResponse {
+  string room_id = 1;
+  string tenant_id = 2;
+  string user_id = 3;
+  UserRole role = 4;
+  google.protobuf.Timestamp joined_at = 5;
+  RoomInfo room_info = 6;
+  repeated Message recent_messages = 7;
+  repeated RoomMember online_members = 8;
+  MessageStatus status = 9;
+  string error_message = 10;
+}
+
+// LeaveRoomRequest for leaving a room
+message LeaveRoomRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  string user_id = 3;
+}
+
+// LeaveRoomResponse after leaving room
+message LeaveRoomResponse {
+  string room_id = 1;
+  string tenant_id = 2;
+  string user_id = 3;
+  google.protobuf.Timestamp left_at = 4;
+  MessageStatus status = 5;
+  string error_message = 6;
+}
+
+// GetRoomMessagesRequest for retrieving messages
+message GetRoomMessagesRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  int32 limit = 3;
+  string before_message_id = 4; // Pagination cursor
+  string after_message_id = 5;  // Alternative pagination
+  google.protobuf.Timestamp before_timestamp = 6;
+  google.protobuf.Timestamp after_timestamp = 7;
+}
+
+// GetRoomMessagesResponse with messages
+message GetRoomMessagesResponse {
+  string room_id = 1;
+  string tenant_id = 2;
+  repeated Message messages = 3;
+  bool has_more = 4;
+  string next_cursor = 5;
+  MessageStatus status = 6;
+  string error_message = 7;
+}
+
+// AcknowledgeMessageRequest for message acknowledgment
+message AcknowledgeMessageRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  string user_id = 3;
+  string message_id = 4;
+  ReceiptType receipt_type = 5;
+  google.protobuf.Timestamp timestamp = 6;
+}
+
+// AcknowledgeMessageResponse after acknowledgment
+message AcknowledgeMessageResponse {
+  string message_id = 1;
+  string user_id = 2;
+  ReceiptType receipt_type = 3;
+  google.protobuf.Timestamp acknowledged_at = 4;
+  MessageStatus status = 5;
+  string error_message = 6;
+}
+
+// TypingRequest for typing indicators
+message TypingRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  string user_id = 3;
+  bool is_typing = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+// TypingResponse after typing update
+message TypingResponse {
+  string room_id = 1;
+  string user_id = 2;
+  bool is_typing = 3;
+  google.protobuf.Timestamp updated_at = 4;
+  MessageStatus status = 5;
+  string error_message = 6;
+}
+
+// PresenceRequest for presence updates
+message PresenceRequest {
+  string tenant_id = 1;
+  string user_id = 2;
+  string status = 3; // online, away, busy, offline
+  repeated string room_ids = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  map<string, string> metadata = 6;
+}
+
+// PresenceResponse after presence update
+message PresenceResponse {
+  string user_id = 1;
+  string status = 2;
+  google.protobuf.Timestamp updated_at = 3;
+  MessageStatus message_status = 4;
+  string error_message = 5;
+}
+
+// GetRoomMembersRequest for room membership
+message GetRoomMembersRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+  bool include_offline = 5;
+}
+
+// GetRoomMembersResponse with members
+message GetRoomMembersResponse {
+  string room_id = 1;
+  string tenant_id = 2;
+  repeated RoomMember members = 3;
+  int32 total_count = 4;
+  MessageStatus status = 5;
+  string error_message = 6;
+}
+
+// StreamRoomUpdatesRequest for real-time updates
+message StreamRoomUpdatesRequest {
+  string tenant_id = 1;
+  string room_id = 2;
+  string user_id = 3;
+  string last_message_id = 4;
+  google.protobuf.Timestamp last_timestamp = 5;
+}
+
+// RoomUpdate for streaming updates
+message RoomUpdate {
+  string room_id = 1;
+  string tenant_id = 2;
+  oneof update {
+    Message new_message = 3;
+    TypingIndicator typing = 4;
+    PresenceUpdate presence = 5;
+    ReadReceipt read_receipt = 6;
+    RoomMemberUpdate member_update = 7;
+  }
+  google.protobuf.Timestamp timestamp = 8;
+}
+
+// HealthCheckResponse for health monitoring
+message HealthCheckResponse {
+  string status = 1;
+  string version = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  map<string, string> details = 4;
+}
+
+// Core data structures
+message Message {
+  string id = 1; // ULID format
+  string tenant_id = 2;
+  string room_id = 3;
+  string sender_id = 4;
+  MessageType message_type = 5;
+  string content = 6;
+  map<string, string> metadata = 7;
+  string thread_id = 8;
+  repeated Attachment attachments = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+  repeated ReadReceipt read_receipts = 12;
+}
+
+message Attachment {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+  int64 size = 4;
+  string mime_type = 5;
+  map<string, string> metadata = 6;
+}
+
+message RoomInfo {
+  string id = 1;
+  string name = 2;
+  RoomType room_type = 3;
+  string created_by = 4;
+  google.protobuf.Timestamp created_at = 5;
+  map<string, string> metadata = 6;
+  bool is_private = 7;
+  int32 member_count = 8;
+}
+
+message RoomMember {
+  string user_id = 1;
+  string username = 2;
+  UserRole role = 3;
+  google.protobuf.Timestamp joined_at = 4;
+  string status = 5; // online, away, busy, offline
+  google.protobuf.Timestamp last_seen = 6;
+  map<string, string> metadata = 7;
+}
+
+message TypingIndicator {
+  string user_id = 1;
+  string username = 2;
+  bool is_typing = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+message PresenceUpdate {
+  string user_id = 1;
+  string username = 2;
+  string status = 3;
+  google.protobuf.Timestamp timestamp = 4;
+  map<string, string> metadata = 5;
+}
+
+message ReadReceipt {
+  string user_id = 1;
+  string username = 2;
+  string message_id = 3;
+  ReceiptType receipt_type = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message RoomMemberUpdate {
+  string user_id = 1;
+  string username = 2;
+  string action = 3; // joined, left, role_changed
+  UserRole new_role = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message MessageStatus {
+  int32 code = 1;
+  string message = 2;
+  map<string, string> details = 3;
+}

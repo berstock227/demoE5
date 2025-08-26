@@ -1,0 +1,25 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\LapTrinhAI\\demoE5\\src\\ChatPlatform.Web\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.ChatPlatform.Web.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.build.ChatPlatform.Web.props",
+      "PackagePath": "build\\ChatPlatform.Web.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.ChatPlatform.Web.props",
+      "PackagePath": "buildMultiTargeting\\ChatPlatform.Web.props"
+    },
+    {
+      "Id": "obj\\Release\\net8.0\\staticwebassets\\msbuild.buildTransitive.ChatPlatform.Web.props",
+      "PackagePath": "buildTransitive\\ChatPlatform.Web.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

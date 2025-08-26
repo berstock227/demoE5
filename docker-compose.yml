@@ -1,0 +1,69 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: chatplatform-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - chatplatform-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: chatplatform-postgres
+    environment:
+      POSTGRES_DB: chatplatform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docs/database-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - chatplatform-network
+
+  chatplatform-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    container_name: chatplatform-web
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_Kestrel__Limits__MaxConcurrentConnections=10000
+      - ASPNETCORE_Kestrel__Limits__MaxConcurrentUpgradedConnections=10000
+      - ASPNETCORE_Kestrel__Limits__MaxRequestBodySize=10485760
+      - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__PostgreSQL=Host=postgres;Database=chatplatform;Username=postgres;Password=password;Pooling=true;MinPoolSize=5;MaxPoolSize=50
+      - JwtSettings__SecretKey=your-super-secret-key-with-at-least-32-characters-change-in-production
+      - JwtSettings__Issuer=ChatPlatform
+      - JwtSettings__Audience=ChatPlatformUsers
+      - JwtSettings__ExpirationMinutes=60
+      - RedisSettings__ConnectionString=redis:6379
+      - RedisSettings__Database=0
+      - RateLimiting__DefaultMessageLimit=100
+      - RateLimiting__DefaultWindowMinutes=1
+      - ConnectionManager__CleanupIntervalMinutes=5
+      - ConnectionManager__MaxInactiveMinutes=30
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - chatplatform-network
+    volumes:
+      - ./src/ChatPlatform.Web/appsettings.json:/app/appsettings.json:ro
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  chatplatform-network:
+    driver: bridge

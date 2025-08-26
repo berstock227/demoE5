@@ -1,0 +1,15 @@
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\bin\Debug\net8.0\ChatPlatform.SignalR.deps.json
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\bin\Debug\net8.0\ChatPlatform.SignalR.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\bin\Debug\net8.0\ChatPlatform.SignalR.pdb
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\bin\Debug\net8.0\ChatPlatform.Core.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\bin\Debug\net8.0\ChatPlatform.Core.pdb
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.csproj.AssemblyReference.cache
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.GeneratedMSBuildEditorConfig.editorconfig
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.AssemblyInfoInputs.cache
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.AssemblyInfo.cs
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.csproj.CoreCompileInputs.cache
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.csproj.CopyComplete
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\refint\ChatPlatform.SignalR.dll
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ChatPlatform.SignalR.pdb
+D:\LapTrinhAI\demoE5\src\ChatPlatform.SignalR\obj\Debug\net8.0\ref\ChatPlatform.SignalR.dll

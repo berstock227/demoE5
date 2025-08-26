@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "4JbspZko/9GYXQe4mBdR70tkmgnjkUbdA7gcKAfQecw=",
+  "Source": "ChatPlatform.Web",
+  "BasePath": "_content/ChatPlatform.Web",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "ChatPlatform.Web\\wwwroot",
+      "Source": "ChatPlatform.Web",
+      "ContentRoot": "D:\\LapTrinhAI\\demoE5\\src\\ChatPlatform.Web\\wwwroot\\",
+      "BasePath": "_content/ChatPlatform.Web",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "D:\\LapTrinhAI\\demoE5\\src\\ChatPlatform.Web\\wwwroot\\index.html",
+      "SourceId": "ChatPlatform.Web",
+      "SourceType": "Discovered",
+      "ContentRoot": "D:\\LapTrinhAI\\demoE5\\src\\ChatPlatform.Web\\wwwroot\\",
+      "BasePath": "_content/ChatPlatform.Web",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\index.html"
+    }
+  ]
+}
